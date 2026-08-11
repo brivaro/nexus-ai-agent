@@ -621,12 +621,24 @@ export default function App() {
         }),
       });
 
+      const text = await res.text();
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Error fetching response');
+        let message = text;
+        try {
+          const errorData = JSON.parse(text);
+          message = errorData.error || text;
+        } catch {
+          // Fall back to raw text when the response is not JSON.
+        }
+        throw new Error(message || `Error fetching response (${res.status})`);
       }
 
-      const data = await res.json();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(text || 'Invalid JSON response from /api/chat');
+      }
 
       const modelMessage: Message = {
         id: (Date.now() + 1).toString(),
